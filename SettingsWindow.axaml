@@ -1,0 +1,110 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Playwrighter.SettingsWindow"
+        Title="Settings"
+        Width="500" Height="400"
+        WindowStartupLocation="CenterOwner"
+        Background="#FFFFFF"
+        CanResize="False">
+    
+    <Grid RowDefinitions="Auto,*,Auto">
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#1E3A5F" Padding="15">
+            <TextBlock Text="Settings" 
+                       Foreground="White" 
+                       FontSize="18" 
+                       FontWeight="SemiBold"/>
+        </Border>
+        
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" Padding="20">
+            <StackPanel Spacing="20">
+                
+                <!-- Browser Settings -->
+                <Border Background="#F8F9FA" CornerRadius="8" Padding="15">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Browser Settings" FontWeight="SemiBold"/>
+                        
+                        <CheckBox x:Name="HeadlessModeCheckBox" 
+                                  Content="Run in headless mode (no visible browser)"/>
+                        
+                        <CheckBox x:Name="UseExistingSsoCheckBox" 
+                                  Content="Use existing SSO session"
+                                  IsChecked="True"/>
+                        
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Edge User Data Directory (for SSO):" 
+                                       Foreground="#6C757D" 
+                                       FontSize="12"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox x:Name="EdgeUserDataDirTextBox"
+                                         Watermark="Leave blank for default"/>
+                                <Button Grid.Column="1" 
+                                        x:Name="BrowseDirButton"
+                                        Content="..."
+                                        Margin="5,0,0,0"
+                                        Padding="10,5"/>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Timing Settings -->
+                <Border Background="#F8F9FA" CornerRadius="8" Padding="15">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Timing Settings" FontWeight="SemiBold"/>
+                        
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Action delay (milliseconds):" 
+                                       Foreground="#6C757D" 
+                                       FontSize="12"/>
+                            <NumericUpDown x:Name="ActionDelayNumeric"
+                                           Value="500"
+                                           Minimum="100"
+                                           Maximum="5000"
+                                           Increment="100"
+                                           Width="150"
+                                           HorizontalAlignment="Left"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                
+                <!-- URL Settings -->
+                <Border Background="#F8F9FA" CornerRadius="8" Padding="15">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="URL Settings" FontWeight="SemiBold"/>
+                        
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Portico URL:" 
+                                       Foreground="#6C757D" 
+                                       FontSize="12"/>
+                            <TextBox x:Name="PorticoUrlTextBox"
+                                     Text="https://evision.ucl.ac.uk/urd/sits.urd/run/siw_lgn"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="#F8F9FA" Padding="15" BorderThickness="0,1,0,0" BorderBrush="#DEE2E6">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                <Button x:Name="CancelButton"
+                        Content="Cancel"
+                        Padding="20,8"
+                        Background="#6C757D"
+                        Foreground="White"
+                        CornerRadius="4"/>
+                <Button x:Name="SaveButton"
+                        Content="Save"
+                        Padding="20,8"
+                        Background="#28A745"
+                        Foreground="White"
+                        CornerRadius="4"/>
+            </StackPanel>
+        </Border>
+        
+    </Grid>
+</Window>

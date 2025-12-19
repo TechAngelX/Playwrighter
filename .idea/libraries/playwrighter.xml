@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="playwrighter">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/playwrighter.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

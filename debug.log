@@ -1,0 +1,33 @@
+=== Excel Column Headers ===
+  Column 1: 'ReceivedDate'
+  Column 2: 'DueDate'
+  Column 3: 'StudentNo'
+  Column 4: 'Programme'
+  Column 5: 'Forename'
+  Column 6: 'Surname'
+  Column 7: 'FeeStatus'
+  Column 8: 'QualificationName'
+  Column 9: 'DegreeSubject'
+  Column 10: 'InstitutionName'
+  Column 11: 'THE Ranking'
+  Column 12: 'CountryOfStudy'
+  Column 13: 'EquivalencyNote'
+  Column 14: 'OverallGradeGPA'
+  Column 15: 'DegreeStatus'
+  Column 16: 'UKGrade'
+  Column 17: 'Decision'
+  Column 18: 'AT Note'
+  Column 19: 'Progr. Adm Comment'
+  Column 20: 'Batch'
+  Column 21: 'Application Quality Rank  (1,4,5 etc)'
+=== Detected Columns ===
+  StudentNo column: 3
+  Decision column: 17
+  Name column: -1
+  Programme column: 4
+  Loaded: StudentNo=26091817, Decision=, Programme='ML'
+  Loaded: StudentNo=26099346, Decision=, Programme='ML'
+  Loaded: StudentNo=23166307, Decision=Under Consideration, Programme='ML'
+  Loaded: StudentNo=26049530, Decision=Reject, Programme='ML'
+  Loaded: StudentNo=26034804, Decision=, Programme='ML'
+=== Total loaded: 133 students ===

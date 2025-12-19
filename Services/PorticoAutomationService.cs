@@ -329,82 +329,70 @@ public class PorticoAutomationService : IPorticoAutomationService
         await Task.Delay(500);
 
         LogStatus("Selecting 'Reject' radio button...");
-        // Find the Reject radio button specifically - it's an input with type=radio
-        // The label text is exactly "Reject" (not "Rejection" or other)
-        var rejectRadio = _page.Locator("input[type='radio']").Nth(1); // Second radio button (index 1)
-        if (!await rejectRadio.IsVisibleAsync())
-        {
-            // Fallback: click the label
-            rejectRadio = _page.Locator("label").Filter(new() { HasText = "Reject" }).First;
-        }
-        if (!await rejectRadio.IsVisibleAsync())
-        {
-            // Another fallback
-            rejectRadio = _page.GetByLabel("Reject");
-        }
-        await rejectRadio.ClickAsync();
-        await Task.Delay(500);
+        var radioButtons = await _page.Locator("input[type='radio']").AllAsync();
+        LogStatus($"Found {radioButtons.Count} radio buttons");
         
-        LogStatus("Waiting for Reason dropdown to appear...");
-        await _page.WaitForSelectorAsync("select", new PageWaitForSelectorOptions { Timeout = 5000 });
-        await Task.Delay(300);
-
-        LogStatus("Selecting Reason 1: PG Reject...");
-        // The dropdown should now be visible after selecting Reject
-        var reason1Dropdown = _page.Locator("select").First;
-        
-        if (await reason1Dropdown.IsVisibleAsync())
+        if (radioButtons.Count >= 2)
         {
-            // Log available options for debugging
-            var options = await reason1Dropdown.Locator("option").AllAsync();
-            LogStatus($"Found {options.Count} options in dropdown");
-            
-            // Try to find and select "8. PG Reject" by partial text match
-            bool selected = false;
-            for (int i = 0; i < options.Count; i++)
-            {
-                var optText = await options[i].InnerTextAsync();
-                if (optText.Contains("PG Reject"))
-                {
-                    var optValue = await options[i].GetAttributeAsync("value");
-                    LogStatus($"Found PG Reject at index {i}: '{optText}', value='{optValue}'");
-                    
-                    if (!string.IsNullOrEmpty(optValue))
-                    {
-                        await reason1Dropdown.SelectOptionAsync(optValue);
-                    }
-                    else
-                    {
-                        await reason1Dropdown.SelectOptionAsync(new SelectOptionValue { Index = i });
-                    }
-                    selected = true;
-                    LogStatus("Selected PG Reject from dropdown.");
-                    break;
-                }
-            }
-            
-            if (!selected)
-            {
-                LogStatus("WARNING: Could not find 'PG Reject' option. Trying index 8...");
-                try
-                {
-                    await reason1Dropdown.SelectOptionAsync(new SelectOptionValue { Index = 8 });
-                    LogStatus("Selected option at index 8.");
-                }
-                catch (Exception ex)
-                {
-                    LogStatus($"Failed to select index 8: {ex.Message}");
-                }
-            }
+            await radioButtons[1].ClickAsync();
+            LogStatus("Clicked Reject radio button");
         }
         else
         {
-            LogStatus("WARNING: Reason 1 dropdown not visible.");
+            var rejectRadio = _page.GetByLabel("Reject");
+            await rejectRadio.ClickAsync();
         }
         
+        await Task.Delay(500);
+        
+        LogStatus("Waiting for Reason 1 dropdown...");
+        try 
+        {
+            await _page.WaitForSelectorAsync("select", new PageWaitForSelectorOptions { Timeout = 5000 });
+        }
+        catch
+        {
+            LogStatus("WARNING: Dropdown did not appear");
+        }
         await Task.Delay(300);
 
-        LogStatus("Clicking Process...");
+        LogStatus("Selecting option 8 via JavaScript...");
+        
+        // Use JavaScript to find the option containing "Not competitive" and select it
+        var jsResult = await _page.EvaluateAsync<string>(@"
+            () => {
+                const selects = document.querySelectorAll('select');
+                if (selects.length === 0) return 'No select found';
+                
+                const select = selects[0];
+                const options = select.options;
+                
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].text.includes('Not competitive')) {
+                        select.selectedIndex = i;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                        return 'Selected: ' + options[i].text;
+                    }
+                }
+                
+                // Fallback: try to find option starting with '8.'
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].text.startsWith('8.')) {
+                        select.selectedIndex = i;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                        return 'Selected by prefix: ' + options[i].text;
+                    }
+                }
+                
+                return 'Option not found. Options count: ' + options.length;
+            }
+        ");
+        
+        LogStatus($"JS Result: {jsResult}");
+        
+        await Task.Delay(500);
+
+        LogStatus("Clicking Process button...");
         var processBtn = _page.Locator("input[value='Process']").First;
         if (!await processBtn.IsVisibleAsync())
         {

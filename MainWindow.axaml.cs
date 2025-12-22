@@ -278,126 +278,132 @@ public partial class MainWindow : Window
         }
     }
     
-    private async void StartButton_Click(object? sender, RoutedEventArgs e)
+private async void StartButton_Click(object? sender, RoutedEventArgs e)
+{
+    if (_students.Count == 0)
     {
-        if (_students.Count == 0)
-        {
-            LogStatus("No students loaded to process.");
-            return;
-        }
-        
-        var debugMode = _debugModeCheckBox.IsChecked ?? false;
-        _automationService.DebugMode = debugMode;
-        
-        _isProcessing = true;
-        _cancellationTokenSource = new CancellationTokenSource();
-        
-        _startButton.IsEnabled = false;
-        _stopButton.IsEnabled = true;
-        _browseButton.IsEnabled = false;
-        _loadSheetButton.IsEnabled = false;
-        
-        try
-        {
-            LogStatus("Initialising browser automation...");
-            await _automationService.InitialiseAsync(_config);
-            
-            LogStatus("Attempting login to Portico...");
-            var loginSuccess = await _automationService.LoginAsync();
-            
-            if (!loginSuccess)
-            {
-                LogStatus("Login failed or timed out.");
-                return;
-            }
-            
-            await _automationService.NavigateToUclSelectAsync();
-            
-            var processAccepts = _processAcceptsCheckBox.IsChecked ?? true;
-            var processRejects = _processRejectsCheckBox.IsChecked ?? false;
-            
-            // DEBUG MODE: Process only first record
-            if (debugMode)
-            {
-                LogStatus("🐛 DEBUG MODE: Processing only FIRST student and pausing before clicking Process button");
-                var firstStudent = _students.First();
-                
-                var isAccept = firstStudent.Decision.Equals("Accept", StringComparison.OrdinalIgnoreCase);
-                var isReject = firstStudent.Decision.Equals("Reject", StringComparison.OrdinalIgnoreCase);
-                
-                if (isAccept && processAccepts)
-                {
-                    await _automationService.ProcessStudentAcceptAsync(firstStudent);
-                }
-                else if (isReject && processRejects)
-                {
-                    await _automationService.ProcessStudentRejectAsync(firstStudent);
-                }
-                
-                LogStatus("🐛 DEBUG MODE COMPLETE: Check the browser now!");
-                LogStatus("🐛 Verify that 'Reject' is selected and 'Reason 1' dropdown shows option 8");
-                LogStatus("🐛 The automation has NOT clicked the Process button - you can manually click it if correct");
-                
-                RefreshStudentGrid();
-                return;
-            }
-            
-            // NORMAL MODE: Process all students
-            foreach (var student in _students)
-            {
-                if (_cancellationTokenSource.Token.IsCancellationRequested)
-                {
-                    LogStatus("Processing cancelled by user.");
-                    break;
-                }
-                
-                var isAccept = student.Decision.Equals("Accept", StringComparison.OrdinalIgnoreCase);
-                var isReject = student.Decision.Equals("Reject", StringComparison.OrdinalIgnoreCase);
-                
-                if (isAccept && processAccepts)
-                {
-                    await _automationService.ProcessStudentAcceptAsync(student);
-                    await _automationService.NavigateToUclSelectAsync();
-                }
-                else if (isReject && processRejects)
-                {
-                    await _automationService.ProcessStudentRejectAsync(student);
-                    await _automationService.NavigateToUclSelectAsync();
-                }
-                else
-                {
-                    student.Status = ProcessingStatus.Skipped;
-                    LogStatus($"Skipped {student.StudentNo} (Decision: {student.Decision})");
-                }
-                
-                RefreshStudentGrid();
-            }
-            
-            LogStatus("Processing complete.");
-        }
-        catch (Exception ex)
-        {
-            LogStatus($"Error during processing: {ex.Message}");
-            LogStatus("Browser left open for debugging. Click Stop to close it.");
-            _stopButton.IsEnabled = true;
-            return;
-        }
-        finally
-        {
-            _isProcessing = false;
-            _startButton.IsEnabled = true;
-            _browseButton.IsEnabled = true;
-            _loadSheetButton.IsEnabled = true;
-        }
-        
-        _stopButton.IsEnabled = false;
-        await _automationService.CloseAsync();
-        
-        var successCount = _students.Count(s => s.Status == ProcessingStatus.Success);
-        var failedCount = _students.Count(s => s.Status == ProcessingStatus.Failed);
-        UpdateFooterStatus($"Complete: {successCount} successful, {failedCount} failed");
+        LogStatus("No students loaded to process.");
+        return;
     }
     
+    var debugMode = _debugModeCheckBox.IsChecked ?? false;
+    _automationService.DebugMode = debugMode;
+    
+    _isProcessing = true;
+    _cancellationTokenSource = new CancellationTokenSource();
+    
+    _startButton.IsEnabled = false;
+    _stopButton.IsEnabled = true;
+    _browseButton.IsEnabled = false;
+    _loadSheetButton.IsEnabled = false;
+    
+    // Create and show the beautiful processing window
+    var processingWindow = new Views.ProcessingWindow();
+    processingWindow.Initialize(_students.ToList());
+    processingWindow.CancelRequested += (s, e) => _cancellationTokenSource?.Cancel();
+    processingWindow.Show();
+    
+    try
+    {
+        processingWindow.LogMessage("Initialising browser automation...");
+        await _automationService.InitialiseAsync(_config);
+        
+        processingWindow.LogMessage("Attempting login to Portico...");
+        var loginSuccess = await _automationService.LoginAsync();
+        
+        if (!loginSuccess)
+        {
+            processingWindow.LogMessage("Login failed or timed out.");
+            processingWindow.UpdateFooterStatus("Login failed");
+            return;
+        }
+        
+        await _automationService.NavigateToUclSelectAsync();
+        
+        var processAccepts = _processAcceptsCheckBox.IsChecked ?? true;
+        var processRejects = _processRejectsCheckBox.IsChecked ?? false;
+        
+        if (debugMode)
+        {
+            processingWindow.LogMessage("DEBUG MODE: Processing only FIRST student");
+            var firstStudent = _students.First();
+            
+            var isAccept = firstStudent.Decision.Equals("Accept", StringComparison.OrdinalIgnoreCase);
+            var isReject = firstStudent.Decision.Equals("Reject", StringComparison.OrdinalIgnoreCase);
+            
+            if (isAccept && processAccepts)
+            {
+                await _automationService.ProcessStudentAcceptAsync(firstStudent);
+            }
+            else if (isReject && processRejects)
+            {
+                await _automationService.ProcessStudentRejectAsync(firstStudent);
+            }
+            
+            processingWindow.LogMessage("DEBUG MODE COMPLETE: Check the browser");
+            processingWindow.UpdateFooterStatus("Debug mode complete - browser paused");
+            processingWindow.ProcessingComplete();
+            
+            RefreshStudentGrid();
+            return;
+        }
+        
+        foreach (var student in _students)
+        {
+            if (_cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                processingWindow.LogMessage("Processing cancelled by user.");
+                processingWindow.UpdateFooterStatus("Cancelled");
+                break;
+            }
+            
+            var isAccept = student.Decision.Equals("Accept", StringComparison.OrdinalIgnoreCase);
+            var isReject = student.Decision.Equals("Reject", StringComparison.OrdinalIgnoreCase);
+            
+            if (isAccept && processAccepts)
+            {
+                await _automationService.ProcessStudentAcceptAsync(student);
+                await _automationService.NavigateToUclSelectAsync();
+            }
+            else if (isReject && processRejects)
+            {
+                await _automationService.ProcessStudentRejectAsync(student);
+                await _automationService.NavigateToUclSelectAsync();
+            }
+            else
+            {
+                student.Status = ProcessingStatus.Skipped;
+                processingWindow.LogMessage($"Skipped {student.StudentNo} (Decision: {student.Decision})");
+            }
+            
+            RefreshStudentGrid();
+        }
+        
+        processingWindow.LogMessage("Processing complete.");
+        processingWindow.ProcessingComplete();
+    }
+    catch (Exception ex)
+    {
+        processingWindow.LogMessage($"Error during processing: {ex.Message}");
+        processingWindow.UpdateFooterStatus("Error occurred - browser left open");
+        _stopButton.IsEnabled = true;
+        return;
+    }
+    finally
+    {
+        _isProcessing = false;
+        _startButton.IsEnabled = true;
+        _browseButton.IsEnabled = true;
+        _loadSheetButton.IsEnabled = true;
+    }
+    
+    _stopButton.IsEnabled = false;
+    await _automationService.CloseAsync();
+    
+    var successCount = _students.Count(s => s.Status == ProcessingStatus.Success);
+    var failedCount = _students.Count(s => s.Status == ProcessingStatus.Failed);
+    UpdateFooterStatus($"Complete: {successCount} successful, {failedCount} failed");
+}
     private async void StopButton_Click(object? sender, RoutedEventArgs e)
     {
         _cancellationTokenSource?.Cancel();

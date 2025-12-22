@@ -99,9 +99,12 @@ public class ExcelService : IExcelService
         Console.WriteLine($"=== Detected Columns ===");
         Console.WriteLine($"  StudentNo column: {studentNoCol}");
         Console.WriteLine($"  Decision column: {decisionCol}");
-        Console.WriteLine($"  Name column: {nameCol}");
-        Console.WriteLine($"  Forename column: {forenameCol}");
-        Console.WriteLine($"  Surname column: {surnameCol}");
+        
+        // Only log the columns we actually found
+        if (nameCol > 0) Console.WriteLine($"  Name column: {nameCol}");
+        if (forenameCol > 0) Console.WriteLine($"  Forename column: {forenameCol}");
+        if (surnameCol > 0) Console.WriteLine($"  Surname column: {surnameCol}");
+        
         Console.WriteLine($"  Programme column: {programmeCol}");
         
         if (studentNoCol == -1) throw new InvalidOperationException("Could not find StudentNo column.");

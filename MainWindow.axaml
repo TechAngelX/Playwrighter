@@ -129,6 +129,11 @@
                                       IsChecked="False"
                                       GroupName="ProcessingMode"/>
                         </WrapPanel>
+                        <CheckBox x:Name="DebugModeCheckBox" 
+                                  Content="🐛 Debug Mode (Process 1 record and PAUSE before clicking Process)"
+                                  Foreground="#DC3545"
+                                  FontWeight="SemiBold"
+                                  Margin="0,5,0,0"/>
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Button x:Name="StartButton"
                                     Content="Start Processing"

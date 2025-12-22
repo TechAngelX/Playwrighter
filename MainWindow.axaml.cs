@@ -56,6 +56,7 @@ public partial class MainWindow : Window
         _actionPanel = this.FindControl<Border>("ActionPanel")!;
         _processAcceptsCheckBox = this.FindControl<RadioButton>("ProcessAcceptsCheckBox")!;
         _processRejectsCheckBox = this.FindControl<RadioButton>("ProcessRejectsCheckBox")!;
+        _debugModeCheckBox = this.FindControl<CheckBox>("DebugModeCheckBox")!;
         _startButton = this.FindControl<Button>("StartButton")!;
         _stopButton = this.FindControl<Button>("StopButton")!;
         _statusLog = this.FindControl<TextBox>("StatusLog")!;
@@ -77,6 +78,7 @@ public partial class MainWindow : Window
     private Border _actionPanel = null!;
     private RadioButton _processAcceptsCheckBox = null!;
     private RadioButton _processRejectsCheckBox = null!;
+    private CheckBox _debugModeCheckBox = null!;
     private Button _startButton = null!;
     private Button _stopButton = null!;
     private TextBox _statusLog = null!;
@@ -284,6 +286,9 @@ public partial class MainWindow : Window
             return;
         }
         
+        var debugMode = _debugModeCheckBox.IsChecked ?? false;
+        _automationService.DebugMode = debugMode;
+        
         _isProcessing = true;
         _cancellationTokenSource = new CancellationTokenSource();
         
@@ -311,6 +316,33 @@ public partial class MainWindow : Window
             var processAccepts = _processAcceptsCheckBox.IsChecked ?? true;
             var processRejects = _processRejectsCheckBox.IsChecked ?? false;
             
+            // DEBUG MODE: Process only first record
+            if (debugMode)
+            {
+                LogStatus("🐛 DEBUG MODE: Processing only FIRST student and pausing before clicking Process button");
+                var firstStudent = _students.First();
+                
+                var isAccept = firstStudent.Decision.Equals("Accept", StringComparison.OrdinalIgnoreCase);
+                var isReject = firstStudent.Decision.Equals("Reject", StringComparison.OrdinalIgnoreCase);
+                
+                if (isAccept && processAccepts)
+                {
+                    await _automationService.ProcessStudentAcceptAsync(firstStudent);
+                }
+                else if (isReject && processRejects)
+                {
+                    await _automationService.ProcessStudentRejectAsync(firstStudent);
+                }
+                
+                LogStatus("🐛 DEBUG MODE COMPLETE: Check the browser now!");
+                LogStatus("🐛 Verify that 'Reject' is selected and 'Reason 1' dropdown shows option 8");
+                LogStatus("🐛 The automation has NOT clicked the Process button - you can manually click it if correct");
+                
+                RefreshStudentGrid();
+                return;
+            }
+            
+            // NORMAL MODE: Process all students
             foreach (var student in _students)
             {
                 if (_cancellationTokenSource.Token.IsCancellationRequested)

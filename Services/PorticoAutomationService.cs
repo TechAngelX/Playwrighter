@@ -13,6 +13,8 @@ public class PorticoAutomationService : IPorticoAutomationService
     private IPage? _page;
     private AppConfig? _config;
 
+    public bool DebugMode { get; set; } = false;
+
     private readonly Dictionary<string, string> _shortToLongProgCodes = new(StringComparer.OrdinalIgnoreCase)
     {
         { "AIBH", "TMSARTSINT03" },
@@ -314,97 +316,127 @@ public class PorticoAutomationService : IPorticoAutomationService
         LogStatus("Offer recommendation processed.");
     }
     
-    private async Task RecommendRejectAsync()
-    {
-        if (_page == null) return;
-        
-        LogStatus("Clicking 'Recommend Offer or Reject'...");
-        var recommendLink = _page.Locator("a").Filter(new() { HasText = "Recommend Offer or Reject" }).First;
-        if (!await recommendLink.IsVisibleAsync())
-        {
-            recommendLink = _page.Locator("text=Recommend Offer or Reject").First;
-        }
-        await recommendLink.ClickAsync();
-        await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-        await Task.Delay(500);
-
-        LogStatus("Selecting 'Reject' radio button...");
-        var radioButtons = await _page.Locator("input[type='radio']").AllAsync();
-        LogStatus($"Found {radioButtons.Count} radio buttons");
-        
-        if (radioButtons.Count >= 2)
-        {
-            await radioButtons[1].ClickAsync();
-            LogStatus("Clicked Reject radio button");
-        }
-        else
-        {
-            var rejectRadio = _page.GetByLabel("Reject");
-            await rejectRadio.ClickAsync();
-        }
-        
-        await Task.Delay(500);
-        
-        LogStatus("Waiting for Reason 1 dropdown...");
-        try 
-        {
-            await _page.WaitForSelectorAsync("select", new PageWaitForSelectorOptions { Timeout = 5000 });
-        }
-        catch
-        {
-            LogStatus("WARNING: Dropdown did not appear");
-        }
-        await Task.Delay(300);
-
-        LogStatus("Selecting option 8 via JavaScript...");
-        
-        // Use JavaScript to find the option containing "Not competitive" and select it
-        var jsResult = await _page.EvaluateAsync<string>(@"
-            () => {
-                const selects = document.querySelectorAll('select');
-                if (selects.length === 0) return 'No select found';
-                
-                const select = selects[0];
-                const options = select.options;
-                
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].text.includes('Not competitive')) {
-                        select.selectedIndex = i;
-                        select.dispatchEvent(new Event('change', { bubbles: true }));
-                        return 'Selected: ' + options[i].text;
-                    }
-                }
-                
-                // Fallback: try to find option starting with '8.'
-                for (let i = 0; i < options.length; i++) {
-                    if (options[i].text.startsWith('8.')) {
-                        select.selectedIndex = i;
-                        select.dispatchEvent(new Event('change', { bubbles: true }));
-                        return 'Selected by prefix: ' + options[i].text;
-                    }
-                }
-                
-                return 'Option not found. Options count: ' + options.length;
-            }
-        ");
-        
-        LogStatus($"JS Result: {jsResult}");
-        
-        await Task.Delay(500);
-
-        LogStatus("Clicking Process button...");
-        var processBtn = _page.Locator("input[value='Process']").First;
-        if (!await processBtn.IsVisibleAsync())
-        {
-            processBtn = _page.Locator("button").Filter(new() { HasText = "Process" }).First;
-        }
-        await processBtn.ClickAsync();
-        await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-        await Task.Delay(500);
-        
-        LogStatus("Rejection processed.");
-    }
-
+  private async Task RecommendRejectAsync()
+  {
+      if (_page == null) return;
+      
+      LogStatus("Clicking 'Recommend Offer or Reject'...");
+      var recommendLink = _page.Locator("a").Filter(new() { HasText = "Recommend Offer or Reject" }).First;
+      if (!await recommendLink.IsVisibleAsync())
+      {
+          recommendLink = _page.Locator("text=Recommend Offer or Reject").First;
+      }
+      await recommendLink.ClickAsync();
+      await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+      await Task.Delay(1000);
+  
+      LogStatus("Selecting 'Reject' radio button...");
+      var radioButtons = await _page.Locator("input[type='radio']").AllAsync();
+      LogStatus($"Found {radioButtons.Count} radio buttons");
+      
+      if (radioButtons.Count >= 2)
+      {
+          await radioButtons[1].ClickAsync();
+          LogStatus("Clicked Reject radio button (index 1)");
+      }
+      else
+      {
+          var rejectRadio = _page.GetByLabel("Reject");
+          await rejectRadio.ClickAsync();
+          LogStatus("Clicked Reject radio button (by label)");
+      }
+      
+      await Task.Delay(2000);
+      
+      LogStatus("Looking for dropdown elements...");
+      var allSelects = await _page.Locator("select").AllAsync();
+      LogStatus($"Total <select> elements found: {allSelects.Count}");
+      
+      if (allSelects.Count < 2)
+      {
+          throw new Exception($"CRITICAL: Need at least 2 dropdowns, found: {allSelects.Count}");
+      }
+      
+      var jsCode = @"
+          () => {
+              const selects = document.querySelectorAll('select');
+              if (selects.length < 2) return 'ERROR: Need at least 2 dropdowns';
+              
+              const select = selects[1];
+              let debugInfo = 'Reason 1 dropdown:\n';
+              
+              for (let i = 0; i < select.options.length; i++) {
+                  debugInfo += '  ' + i + ': ' + select.options[i].text + '\n';
+              }
+              
+              let foundOption = null;
+              
+              for (let i = 0; i < select.options.length; i++) {
+                  const text = select.options[i].text;
+                  if ((text.startsWith('8.') || text.startsWith('8 ')) && 
+                      text.toLowerCase().includes('not competitive')) {
+                      foundOption = i;
+                      break;
+                  }
+              }
+              
+              if (foundOption === null) {
+                  for (let i = 0; i < select.options.length; i++) {
+                      const text = select.options[i].text.toLowerCase();
+                      if (text.includes('not competitive') && text.includes('oversubscribed')) {
+                          foundOption = i;
+                          break;
+                      }
+                  }
+              }
+              
+              if (foundOption !== null) {
+                  select.selectedIndex = foundOption;
+                  select.value = select.options[foundOption].value;
+                  select.dispatchEvent(new Event('change', { bubbles: true }));
+                  
+                  return 'SUCCESS: Selected option ' + foundOption + ': ' + select.options[foundOption].text;
+              }
+              
+              return 'FAILED: Could not find option 8\n' + debugInfo;
+          }
+      ";
+      
+      var jsResult = await _page.EvaluateAsync<string>(jsCode);
+      
+      LogStatus("=== DROPDOWN SELECTION RESULT ===");
+      LogStatus(jsResult);
+      LogStatus("================================");
+      
+      if (!jsResult.Contains("SUCCESS"))
+      {
+          throw new Exception("CRITICAL: Failed to select option 8!\n" + jsResult);
+      }
+      
+      await Task.Delay(1000);
+  
+      if (DebugMode)
+      {
+          LogStatus("⏸️⏸️⏸️ DEBUG MODE: PAUSED ⏸️⏸️⏸️");
+          LogStatus("⏸️ Check the browser NOW:");
+          LogStatus("⏸️   1. Is 'Reject' selected?");
+          LogStatus("⏸️   2. Does 'Reason 1' show option 8?");
+          LogStatus("⏸️ Process button will NOT be clicked");
+          return;
+      }
+  
+      LogStatus("Clicking Process button...");
+      var processBtn = _page.Locator("input[value='Process']").First;
+      if (!await processBtn.IsVisibleAsync())
+      {
+          processBtn = _page.Locator("button").Filter(new() { HasText = "Process" }).First;
+      }
+      await processBtn.ClickAsync();
+      await _page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+      await Task.Delay(500);
+      
+      LogStatus("Rejection processed.");
+  }
     public async Task CloseAsync()
     {
         LogStatus("Closing browser...");

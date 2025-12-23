@@ -1,0 +1,251 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Playwrighter.Views.ProcessingWindow"
+        Title="Processing Students"
+        Width="700" Height="600"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="AcrylicBlur"
+        ExtendClientAreaToDecorationsHint="True">
+    
+    <Window.Styles>
+        <Style Selector="Border.student-row">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.3"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        
+        <Style Selector="TextBlock.status-icon">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.4"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        
+        <Style Selector="TextBlock.status-text">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.3"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        
+        <Style Selector="ProgressBar">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Value" Duration="0:0:0.5" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+    </Window.Styles>
+    
+    <Border Background="#F5F7FA" CornerRadius="12" Margin="1">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" Opacity="0.15" OffsetX="0" OffsetY="4" BlurRadius="20"/>
+        </Border.Effect>
+        
+        <Grid RowDefinitions="Auto,*,Auto" Margin="0">
+            
+            <!-- Header -->
+            <Border Grid.Row="0" 
+                    Background="#1E3A5F" 
+                    CornerRadius="12,12,0,0"
+                    Padding="30,20">
+                <StackPanel Spacing="8">
+                    <TextBlock x:Name="TitleText"
+                               Text="Processing Students" 
+                               Foreground="White" 
+                               FontSize="24" 
+                               FontWeight="Bold"/>
+                    <TextBlock x:Name="SubtitleText"
+                               Text="Automating admissions decisions..." 
+                               Foreground="#87CEEB" 
+                               FontSize="14"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Main Content -->
+            <ScrollViewer Grid.Row="1" Padding="30" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="20">
+                    
+                    <!-- Progress Bar -->
+                    <Border Background="White" 
+                            CornerRadius="8" 
+                            Padding="20"
+                            BoxShadow="0 2 8 0 #10000000">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Progress" 
+                                           FontWeight="SemiBold" 
+                                           FontSize="14"
+                                           Foreground="#2D3748"/>
+                                <TextBlock x:Name="ProgressText" 
+                                           Grid.Column="1"
+                                           Text="0 / 0 (0%)" 
+                                           Foreground="#718096"
+                                           FontSize="14"/>
+                            </Grid>
+                            <ProgressBar x:Name="ProgressBar"
+                                       Height="8"
+                                       Minimum="0"
+                                       Maximum="100"
+                                       Value="0"
+                                       Background="#E2E8F0"
+                                       Foreground="#4299E1"
+                                       CornerRadius="4"/>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Students List -->
+                    <Border Background="White" 
+                            CornerRadius="8" 
+                            Padding="0"
+                            BoxShadow="0 2 8 0 #10000000">
+                        <Grid RowDefinitions="Auto,*">
+                            
+                            <!-- Table Header -->
+                            <Border Grid.Row="0" 
+                                    Background="#F7FAFC" 
+                                    Padding="20,15"
+                                    CornerRadius="8,8,0,0"
+                                    BorderThickness="0,0,0,1"
+                                    BorderBrush="#E2E8F0">
+                                <Grid ColumnDefinitions="100,*">
+                                    <TextBlock Text="Status" 
+                                               FontWeight="SemiBold" 
+                                               FontSize="13"
+                                               Foreground="#4A5568"/>
+                                    <TextBlock Grid.Column="1" 
+                                               Text="Student" 
+                                               FontWeight="SemiBold" 
+                                               FontSize="13"
+                                               Foreground="#4A5568"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Students ScrollViewer -->
+                            <ScrollViewer x:Name="StudentsScrollViewer"
+                                        Grid.Row="1" 
+                                        MaxHeight="300"
+                                        VerticalScrollBarVisibility="Auto">
+                                <ItemsControl x:Name="StudentsList" Padding="0">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderThickness="0,0,0,1" 
+                                                    BorderBrush="#F1F5F9"
+                                                    Padding="20,15"
+                                                    Classes="student-row">
+                                                <Grid ColumnDefinitions="100,*">
+                                                    <!-- Status Column -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding StatusIcon}"
+                                                                 FontSize="16"
+                                                                 VerticalAlignment="Center"
+                                                                 Classes="status-icon"
+                                                                 RenderTransformOrigin="0.5,0.5">
+                                                            <TextBlock.RenderTransform>
+                                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                                            </TextBlock.RenderTransform>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding StatusText}"
+                                                                 FontSize="13"
+                                                                 Foreground="{Binding StatusColor}"
+                                                                 FontWeight="Medium"
+                                                                 VerticalAlignment="Center"
+                                                                 Classes="status-text"/>
+                                                    </StackPanel>
+                                                    
+                                                    <!-- Student Info Column -->
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock FontSize="14" 
+                                                                 FontWeight="Medium"
+                                                                 Foreground="#2D3748">
+                                                            <Run Text="{Binding StudentNo}"/>
+                                                            <Run Text=" - "/>
+                                                            <Run Text="{Binding Forename}"/>
+                                                            <Run Text=" "/>
+                                                            <Run Text="{Binding Surname}"/>
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding Decision}"
+                                                                 FontSize="12"
+                                                                 Foreground="#718096"
+                                                                 Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            
+                        </Grid>
+                    </Border>
+                    
+                    <!-- Status Log -->
+                    <Border Background="White" 
+                            CornerRadius="8" 
+                            Padding="20"
+                            BoxShadow="0 2 8 0 #10000000">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Activity Log" 
+                                       FontWeight="SemiBold" 
+                                       FontSize="14"
+                                       Foreground="#2D3748"/>
+                            <TextBox x:Name="StatusLog"
+                                   Height="120"
+                                   IsReadOnly="True"
+                                   AcceptsReturn="True"
+                                   TextWrapping="Wrap"
+                                   Background="#F7FAFC"
+                                   BorderBrush="#E2E8F0"
+                                   Padding="12"
+                                   FontFamily="Consolas, Monaco, monospace"
+                                   FontSize="11"
+                                   Foreground="#4A5568"/>
+                        </StackPanel>
+                    </Border>
+                    
+                </StackPanel>
+            </ScrollViewer>
+            
+            <!-- Footer -->
+            <Border Grid.Row="2" 
+                    Background="#F7FAFC" 
+                    BorderThickness="0,1,0,0"
+                    BorderBrush="#E2E8F0"
+                    CornerRadius="0,0,12,12"
+                    Padding="30,20">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock x:Name="FooterStatus" 
+                               Text="Ready to start..." 
+                               Foreground="#718096"
+                               VerticalAlignment="Center"
+                               FontSize="13"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="CancelButton"
+                                Content="Cancel"
+                                Padding="20,10"
+                                Background="#E53E3E"
+                                Foreground="White"
+                                CornerRadius="6"
+                                FontWeight="Medium"
+                                IsVisible="True"/>
+                        <Button x:Name="CloseButton"
+                                Content="Close"
+                                Padding="20,10"
+                                Background="#4A5568"
+                                Foreground="White"
+                                CornerRadius="6"
+                                FontWeight="Medium"
+                                IsVisible="False"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+        </Grid>
+    </Border>
+</Window>

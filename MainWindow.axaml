@@ -171,60 +171,54 @@
                         </StackPanel>
                     </Border>
                     
+                    <!-- Action Buttons -->
                     <Border x:Name="ActionPanel"
-                            CornerRadius="12"
-                            Padding="25"
-                            BoxShadow="0 10 25 -5 #20000000"
+                            Background="#F8F9FA"
+                            CornerRadius="8"
+                            Padding="15"
                             IsVisible="False">
-                         <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                                <GradientStop Color="#FFFFFF" Offset="0"/>
-                                <GradientStop Color="#F8FAFC" Offset="1"/>
-                            </LinearGradientBrush>
-                        </Border.Background>
-                        
-                        <Grid ColumnDefinitions="*, Auto">
-                            <StackPanel Spacing="15">
-                                <TextBlock Text="Ready to Launch" FontWeight="Bold" FontSize="16" Foreground="#1E293B"/>
-                                
-                                <StackPanel Orientation="Horizontal" Spacing="20">
-                                    <RadioButton x:Name="ProcessRejectsCheckBox" 
-                                                 Content="Process Rejects" 
-                                                 IsChecked="True" 
-                                                 GroupName="Mode"
-                                                 FontWeight="Medium"/>
-                                    <RadioButton x:Name="ProcessAcceptsCheckBox" 
-                                                 Content="Process Accepts" 
-                                                 GroupName="Mode"
-                                                 FontWeight="Medium"/>
-                                </StackPanel>
-                                
-                                <CheckBox x:Name="DebugModeCheckBox" 
-                                          Content="Debug Mode (Test 1 record only)" 
-                                          Foreground="#64748B"/>
-                            </StackPanel>
-                            
-                            <StackPanel Grid.Column="1" Spacing="10" VerticalAlignment="Center">
+                        <StackPanel Spacing="15">
+                            <TextBlock Text="Processing Options:" FontWeight="SemiBold"/>
+                            <WrapPanel Orientation="Horizontal">
+                                <RadioButton x:Name="ProcessRejectsCheckBox" 
+                                          Content="Process Rejects" 
+                                          IsChecked="True"
+                                          Margin="0,0,20,0"
+                                          GroupName="ProcessingMode"/>
+                                <RadioButton x:Name="ProcessAcceptsCheckBox" 
+                                          Content="Process Accepts" 
+                                          IsChecked="False"
+                                          GroupName="ProcessingMode"/>
+                            </WrapPanel>
+                            <CheckBox x:Name="DebugModeCheckBox" 
+                                      Content="🐛 Debug Mode (Process 1 record and PAUSE before clicking Process)"
+                                      Foreground="#DC3545"
+                                      FontWeight="SemiBold"
+                                      Margin="0,5,0,0"/>
+                            <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Button x:Name="StartButton"
-                                        Content="🚀 Start Automation"
-                                        Padding="30,12"
-                                        Background="#2563EB"
+                                        Content="Start Processing"
+                                        Padding="20,12"
+                                        Background="#007BFF"
                                         Foreground="White"
-                                        FontSize="15"
-                                        FontWeight="Bold"
-                                        CornerRadius="8"
-                                        HorizontalContentAlignment="Center"/>
-                                        
+                                        CornerRadius="4"
+                                        FontWeight="SemiBold"/>
                                 <Button x:Name="StopButton"
                                         Content="Stop"
-                                        Background="#EF4444"
+                                        Padding="20,12"
+                                        Background="#DC3545"
                                         Foreground="White"
-                                        CornerRadius="8"
-                                        IsEnabled="False"
-                                        HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Center"/>
+                                        CornerRadius="4"
+                                        IsEnabled="False"/>
+                                <Button x:Name="ResetButton"
+                                        Content="🔄 Reset"
+                                        Padding="20,12"
+                                        Background="#6C757D"
+                                        Foreground="White"
+                                        CornerRadius="4"
+                                        FontWeight="Medium"/>
                             </StackPanel>
-                        </Grid>
+                        </StackPanel>
                     </Border>
 
                     <Border Background="#1E293B" CornerRadius="12" Padding="0" ClipToBounds="True">
@@ -260,7 +254,8 @@
                                VerticalAlignment="Center"/>
                     
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                        <Button x:Name="SettingsButton" Content="⚙" Padding="10" CornerRadius="6" Background="White" BorderBrush="#E2E8F0" BorderThickness="1"/>
+                        <Button x:Name="SettingsButton" Content="⚙️" FontSize="24"
+ Padding="5" CornerRadius="6" Background="White" BorderBrush="#E2E8F0" BorderThickness="1"/>
                         <Button x:Name="ExitButton" Content="Exit" Padding="20,8" CornerRadius="6" Background="Transparent" Foreground="#64748B"/>
                     </StackPanel>
                 </Grid>

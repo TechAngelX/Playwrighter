@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     private TextBlock _footerStatus = null!;
     private Button _settingsButton = null!;
     private Button _exitButton = null!;
+    private Button _resetButton = null!;
 
     public MainWindow()
     {
@@ -88,7 +89,10 @@ public partial class MainWindow : Window
         _footerStatus = this.FindControl<TextBlock>("FooterStatus")!;
         _settingsButton = this.FindControl<Button>("SettingsButton")!;
         _exitButton = this.FindControl<Button>("ExitButton")!;
+        _resetButton = this.FindControl<Button>("ResetButton")!;
     }
+    
+    
     
     private void SetupEventHandlers()
     {
@@ -101,6 +105,8 @@ public partial class MainWindow : Window
         _exitButton.Click += ExitButton_Click;
         _processAcceptsCheckBox.IsCheckedChanged += FilterCheckBox_Changed;
         _processRejectsCheckBox.IsCheckedChanged += FilterCheckBox_Changed;
+        _resetButton.Click += ResetButton_Click;  
+
     }
     
     private void FilterCheckBox_Changed(object? sender, RoutedEventArgs e)
@@ -250,7 +256,7 @@ public partial class MainWindow : Window
         }
     }
     
-    private void LoadSheetButton_Click(object? sender, RoutedEventArgs e)
+private void LoadSheetButton_Click(object? sender, RoutedEventArgs e)
     {
         try
         {
@@ -270,6 +276,11 @@ public partial class MainWindow : Window
             
             LogStatus($"Loaded {_allStudents.Count} students from '{selectedSheet}' (Accepts: {totalAccepts}, Rejects: {totalRejects})");
             
+            // ⬇️ NEW: Hide the setup panels so the UI is clean
+            _dropZone.IsVisible = false;
+            _sheetSelectionPanel.IsVisible = false;
+
+            // ⬇️ SHOW the data grid and action buttons
             _studentListPanel.IsVisible = true;
             _actionPanel.IsVisible = true;
             
@@ -427,7 +438,28 @@ public partial class MainWindow : Window
             UpdateFooterStatus($"Complete: {successCount} successful, {failedCount} failed");
         }
     }
-    
+    private void ResetButton_Click(object? sender, RoutedEventArgs e)
+    {
+        _allStudents.Clear();
+        _students.Clear();
+        _currentFilePath = string.Empty;
+        
+        _dropZoneText.Text = "Drag and drop your Excel file here";
+        _dropZone.IsVisible = true;
+        _sheetSelectionPanel.IsVisible = false;
+        _studentListPanel.IsVisible = false;
+        _actionPanel.IsVisible = false;
+        _studentGrid.ItemsSource = null;
+        _sheetComboBox.ItemsSource = null;
+        _statusLog.Text = string.Empty;
+        
+        _processRejectsCheckBox.IsChecked = true;
+        _processAcceptsCheckBox.IsChecked = false;
+        _debugModeCheckBox.IsChecked = false;
+        
+        UpdateFooterStatus("Ready");
+        LogStatus("Application reset - ready to load new file");
+    }
     private async void StopButton_Click(object? sender, RoutedEventArgs e)
     {
         _cancellationTokenSource?.Cancel();

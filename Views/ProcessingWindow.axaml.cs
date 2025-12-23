@@ -1,3 +1,5 @@
+// Views/ProcessingWindow.axaml.cs
+
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
@@ -14,43 +16,15 @@ public partial class ProcessingWindow : Window
     private ObservableCollection<ProcessingStudentViewModel> _students = new();
     private int _totalStudents;
     private int _processedCount;
-
-    // Explicitly define the controls to satisfy the compiler
-    private ProgressBar ProgressBar = null!;
-    private TextBlock ProgressText = null!;
-    private ItemsControl StudentsList = null!;
-    private ScrollViewer StudentsScrollViewer = null!;
-    private TextBox StatusLog = null!;
-    private TextBlock FooterStatus = null!;
-    private TextBlock SubtitleText = null!;
-    private Button CancelButton = null!;
-    private Button CloseButton = null!;
+    private System.Timers.Timer? _pulseTimer;
     
     public ProcessingWindow()
     {
         InitializeComponent();
         StudentsList.ItemsSource = _students;
         
-        // Attach event handlers
         CancelButton.Click += (s, e) => OnCancelRequested();
         CloseButton.Click += (s, e) => Close();
-    }
-    
-    private void InitializeComponent()
-    {
-        // Load the XAML
-        AvaloniaXamlLoader.Load(this);
-
-        // Manually find the controls by their x:Name
-        ProgressBar = this.FindControl<ProgressBar>("ProgressBar")!;
-        ProgressText = this.FindControl<TextBlock>("ProgressText")!;
-        StudentsList = this.FindControl<ItemsControl>("StudentsList")!;
-        StudentsScrollViewer = this.FindControl<ScrollViewer>("StudentsScrollViewer")!;
-        StatusLog = this.FindControl<TextBox>("StatusLog")!;
-        FooterStatus = this.FindControl<TextBlock>("FooterStatus")!;
-        SubtitleText = this.FindControl<TextBlock>("SubtitleText")!;
-        CancelButton = this.FindControl<Button>("CancelButton")!;
-        CloseButton = this.FindControl<Button>("CloseButton")!;
     }
     
     public event EventHandler? CancelRequested;
@@ -64,15 +38,11 @@ public partial class ProcessingWindow : Window
         
         foreach (var student in students)
         {
-            var nameParts = (student.Name ?? "").Split(new[] { ' ' }, 2);
-            var fName = nameParts.Length > 0 ? nameParts[0] : "";
-            var sName = nameParts.Length > 1 ? nameParts[1] : "";
-
             _students.Add(new ProcessingStudentViewModel
             {
                 StudentNo = student.StudentNo,
-                Forename = fName,
-                Surname = sName,
+                Forename = student.Forename,
+                Surname = student.Surname,
                 Decision = student.Decision,
                 StatusIcon = "⏳",
                 StatusText = "Pending",
@@ -96,19 +66,22 @@ public partial class ProcessingWindow : Window
                     student.StatusIcon = "⚙";
                     student.StatusText = "Processing";
                     student.StatusColor = "#4299E1";
+                    StartPulseAnimation(studentNo);
                     break;
-                
+                    
                 case ProcessingStatus.Success:
                     student.StatusIcon = "✓";
                     student.StatusText = "Done";
                     student.StatusColor = "#48BB78";
+                    StopPulseAnimation(studentNo);
                     _processedCount++;
                     break;
-                
+                    
                 case ProcessingStatus.Failed:
                     student.StatusIcon = "✗";
                     student.StatusText = "Failed";
                     student.StatusColor = "#E53E3E";
+                    StopPulseAnimation(studentNo);
                     _processedCount++;
                     break;
             }
@@ -116,6 +89,34 @@ public partial class ProcessingWindow : Window
             UpdateProgress();
             ScrollToCurrentStudent(studentNo);
         });
+    }
+    
+    private void StartPulseAnimation(string studentNo)
+    {
+        _pulseTimer?.Stop();
+        _pulseTimer = new System.Timers.Timer(500);
+        var pulse = true;
+        
+        _pulseTimer.Elapsed += (s, e) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                var student = _students.FirstOrDefault(s => s.StudentNo == studentNo);
+                if (student != null && student.StatusText == "Processing")
+                {
+                    student.StatusColor = pulse ? "#4299E1" : "#63B3ED";
+                    pulse = !pulse;
+                }
+            });
+        };
+        
+        _pulseTimer.Start();
+    }
+    
+    private void StopPulseAnimation(string studentNo)
+    {
+        _pulseTimer?.Stop();
+        _pulseTimer = null;
     }
     
     public void LogMessage(string message)
@@ -163,9 +164,37 @@ public partial class ProcessingWindow : Window
         var index = _students.ToList().FindIndex(s => s.StudentNo == studentNo);
         if (index >= 0)
         {
-            var itemHeight = 60;
-            var scrollPosition = index * itemHeight;
-            StudentsScrollViewer.Offset = new Avalonia.Vector(0, scrollPosition);
+            var itemHeight = 65.0;
+            var viewportHeight = StudentsScrollViewer.Viewport.Height;
+            var scrollPosition = (index * itemHeight) - (viewportHeight / 2) + (itemHeight / 2);
+            scrollPosition = Math.Max(0, scrollPosition);
+            
+            var currentOffset = StudentsScrollViewer.Offset.Y;
+            var targetOffset = scrollPosition;
+            var steps = 20;
+            var stepSize = (targetOffset - currentOffset) / steps;
+            
+            var scrollTimer = new System.Timers.Timer(10);
+            var currentStep = 0;
+            
+            scrollTimer.Elapsed += (s, e) =>
+            {
+                if (currentStep >= steps)
+                {
+                    scrollTimer.Stop();
+                    scrollTimer.Dispose();
+                    return;
+                }
+                
+                Dispatcher.UIThread.Post(() =>
+                {
+                    currentOffset += stepSize;
+                    StudentsScrollViewer.Offset = new Avalonia.Vector(0, currentOffset);
+                    currentStep++;
+                });
+            };
+            
+            scrollTimer.Start();
         }
     }
     

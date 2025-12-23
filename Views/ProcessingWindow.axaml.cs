@@ -201,5 +201,6 @@ public partial class ProcessingWindow : Window
     private void OnCancelRequested()
     {
         CancelRequested?.Invoke(this, EventArgs.Empty);
+        Close();
     }
 }
